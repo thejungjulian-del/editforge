@@ -1,0 +1,9 @@
+flask
+numpy
+opencv-python
+librosa
+scenedetect
+av
+yt-dlp
+# optional: learned shot detection (sbd.py)
+# torch

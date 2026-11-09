@@ -1,0 +1,37 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# data, logs, caches
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# environments and dependencies
+venv/
+.venv/
+node_modules/
+.next/
+
+# OS
+.DS_Store
+
+# EditForge working folders and downloaded models
+uploads/
+output/
+work/
+models/
+*.mp4
+!fixtures/clips/clip0.mp4
+*.mov
+*.jsx

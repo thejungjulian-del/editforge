@@ -1,0 +1,475 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EditForge</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #101013;
+      --line: #1f1f24;
+      --line-soft: #17171b;
+      --text: #ededf0;
+      --dim: #8a8a94;
+      --dimmer: #5c5c66;
+      --accent: #6ea8fe;
+      --accent-dim: #6ea8fe1a;
+      --good: #5ed3a0;
+      --bad: #ff7b72;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font: 15px/1.6 -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 64px 24px 120px; display: flex; justify-content: center;
+    }
+    main { width: 100%; max-width: 680px; }
+
+    header { margin-bottom: 44px; }
+    h1 {
+      font-size: 15px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    h1 span { color: var(--accent); }
+    .tag { color: var(--dim); margin-top: 10px; font-size: 15px; max-width: 46ch; }
+
+    .step {
+      border: 1px solid var(--line); border-radius: 12px;
+      padding: 26px; margin-bottom: 14px; background: var(--panel);
+      transition: opacity .25s, border-color .25s;
+    }
+    .step.off { opacity: .38; pointer-events: none; }
+    .step.done { border-color: #24312a; }
+    .num {
+      font-size: 10px; letter-spacing: .13em; text-transform: uppercase;
+      color: var(--dimmer); margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .num .tick { color: var(--good); letter-spacing: 0; text-transform: none; font-size: 12px; }
+
+    input[type=text] {
+      width: 100%; background: #060607; border: 1px solid var(--line);
+      border-radius: 9px; padding: 13px 15px; color: var(--text);
+      font: inherit; font-size: 14px; transition: border-color .15s;
+    }
+    input[type=text]::placeholder { color: var(--dimmer); }
+    input[type=text]:focus { outline: none; border-color: var(--accent); }
+    input[type=file] { display: none; }
+
+    .or {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--dimmer); font-size: 10px; letter-spacing: .13em;
+      text-transform: uppercase; margin: 14px 0;
+    }
+    .or::before, .or::after {
+      content: ""; flex: 1; height: 1px; background: var(--line-soft);
+    }
+
+    .drop {
+      display: block; border: 1px dashed var(--line); border-radius: 9px;
+      padding: 34px 20px; text-align: center; color: var(--dim);
+      cursor: pointer; transition: .15s; font-size: 14px;
+    }
+    .drop:hover, .drop.over {
+      border-color: var(--accent); color: var(--accent); background: var(--accent-dim);
+    }
+    .drop b { color: var(--text); font-weight: 500; }
+
+    button {
+      width: 100%; background: var(--accent); color: #06121f; border: 0;
+      border-radius: 9px; padding: 13px 20px; font-weight: 600; font-size: 14px;
+      cursor: pointer; margin-top: 16px; font-family: inherit;
+      transition: filter .15s;
+    }
+    button:hover:not(:disabled) { filter: brightness(1.08); }
+    button:disabled { background: #1c1c20; color: var(--dimmer); cursor: default; }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 4px; margin-top: 22px;
+    }
+    .stat .k {
+      font-size: 10px; color: var(--dimmer); text-transform: uppercase;
+      letter-spacing: .09em;
+    }
+    .stat .v {
+      font-size: 22px; font-weight: 600; margin-top: 4px;
+      letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+    }
+    .stat .v small { font-size: 12px; color: var(--dim); font-weight: 400; margin-left: 1px; }
+
+    .curve {
+      display: flex; align-items: flex-end; gap: 2px; height: 46px; margin-top: 24px;
+    }
+    .curve i {
+      flex: 1; background: linear-gradient(180deg, var(--accent), #2f5c96);
+      border-radius: 2px 2px 0 0; min-height: 3px; opacity: .85;
+    }
+    .curve-cap {
+      font-size: 11px; color: var(--dimmer); margin-top: 8px;
+      display: flex; justify-content: space-between;
+    }
+
+    .note {
+      margin-top: 20px; padding: 14px 16px; border-radius: 9px;
+      background: var(--accent-dim); border-left: 2px solid var(--accent);
+      color: #b9d3f5; font-size: 13.5px; line-height: 1.55;
+    }
+    .note b { color: #fff; font-weight: 600; }
+
+    .applied { margin-top: 22px; border-top: 1px solid var(--line-soft); padding-top: 18px; }
+    .applied .h {
+      font-size: 10px; letter-spacing: .13em; text-transform: uppercase;
+      color: var(--dimmer); margin-bottom: 12px;
+    }
+    .fx { display: flex; align-items: baseline; gap: 9px; font-size: 13.5px; padding: 4px 0; }
+    .fx .dot { color: var(--good); font-size: 11px; }
+    .fx .why { color: var(--dimmer); font-size: 12.5px; }
+
+    .path {
+      margin-top: 16px; background: #060607; border: 1px solid var(--line);
+      border-radius: 8px; padding: 12px 14px; font-size: 12.5px;
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      color: var(--dim); overflow-x: auto; white-space: nowrap;
+    }
+    .steps-ae { margin-top: 18px; font-size: 13.5px; color: var(--dim); }
+    .steps-ae li { margin: 7px 0 7px 18px; }
+    .steps-ae b { color: var(--text); font-weight: 500; }
+    .steps-ae code {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12.5px;
+      background: #1a1a1f; padding: 2px 6px; border-radius: 4px; color: #c9c9d2;
+    }
+
+    a.dl {
+      display: inline-block; color: var(--accent); font-size: 13.5px;
+      margin-top: 18px; text-decoration: none; font-weight: 500;
+    }
+    a.dl:hover { text-decoration: underline; }
+
+    details { margin-top: 22px; }
+    summary {
+      cursor: pointer; font-size: 12px; color: var(--dimmer);
+      letter-spacing: .04em; list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: "▸ "; }
+    details[open] summary::before { content: "▾ "; }
+    summary:hover { color: var(--dim); }
+
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    td, th { padding: 7px 8px; text-align: left; border-bottom: 1px solid var(--line-soft); }
+    th {
+      color: var(--dimmer); font-weight: 500; text-transform: uppercase;
+      font-size: 10px; letter-spacing: .07em;
+    }
+
+    .err {
+      color: var(--bad); font-size: 13.5px; margin-top: 14px;
+      background: #ff7b7212; border-left: 2px solid var(--bad);
+      padding: 12px 14px; border-radius: 8px;
+    }
+    .spin { color: var(--dim); font-size: 13.5px; margin-top: 16px; }
+    .spin::after {
+      content: ""; display: inline-block; width: 4px; height: 4px;
+      margin-left: 2px; border-radius: 50%; background: var(--accent);
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: .25 } 50% { opacity: 1 } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Edit<span>Forge</span></h1>
+    <p class="tag">Point it at an edit you like. Give it your footage.
+       Get that edit back as a real After Effects comp, built from your clips.</p>
+  </header>
+
+  <section class="step" id="s1">
+    <div class="num"><span>01 — The edit you want to copy</span><span class="tick" id="t1"></span></div>
+    <input type="text" id="url" placeholder="Paste a TikTok, Reels, or Shorts link">
+    <div class="or">or</div>
+    <label class="drop" id="d1">
+      <input type="file" id="ref" accept="video/*">
+      <span id="d1t">Drop the video file</span>
+    </label>
+    <button id="b1" disabled>Read the edit</button>
+    <div id="s1out"></div>
+  </section>
+
+  <section class="step off" id="s2">
+    <div class="num"><span>02 — Your footage</span><span class="tick" id="t2"></span></div>
+    <label class="drop" id="d2">
+      <input type="file" id="clips" accept="video/*" multiple>
+      <span id="d2t">Drop your source clips</span>
+    </label>
+    <div class="applied" id="applied"></div>
+    <button id="b2" disabled>Rebuild it with my clips</button>
+    <div id="s2out"></div>
+  </section>
+
+  <section class="step off" id="s3">
+    <div class="num"><span>03 — Open in After Effects</span></div>
+    <div id="s3out"></div>
+  </section>
+
+  <section class="step off" id="s4">
+    <div class="num"><span>04 — Check the match</span><span class="tick" id="t4"></span></div>
+    <p class="note">Rendered the comp in After Effects? Drop the exported video and I'll measure how
+      close it came to the reference — cut by cut. I can only score the <b>edit mechanics</b>
+      (rhythm, transitions, where cuts land on motion, effect levels); the content, colour and
+      camera move are different on purpose and are listed as such, not counted against you.</p>
+    <label class="drop" id="d4">
+      <input type="file" id="editrender" accept="video/*">
+      <span id="d4t">Drop your rendered edit (MP4 / MOV)</span>
+    </label>
+    <button id="b4" disabled>Score it against the reference</button>
+    <div id="s4out"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function wireDrop(dropEl, inputEl, labelEl, btn) {
+  dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.classList.add('over'); });
+  dropEl.addEventListener('dragleave', () => dropEl.classList.remove('over'));
+  dropEl.addEventListener('drop', e => {
+    e.preventDefault(); dropEl.classList.remove('over');
+    inputEl.files = e.dataTransfer.files;
+    inputEl.dispatchEvent(new Event('change'));
+  });
+  inputEl.addEventListener('change', () => {
+    const n = inputEl.files.length;
+    if (!n) return;
+    labelEl.innerHTML = n === 1
+      ? `<b>${inputEl.files[0].name}</b>`
+      : `<b>${n} clips</b> selected`;
+    btn.disabled = false;
+  });
+}
+
+wireDrop($('d1'), $('ref'), $('d1t'), $('b1'));
+wireDrop($('d2'), $('clips'), $('d2t'), $('b2'));
+wireDrop($('d4'), $('editrender'), $('d4t'), $('b4'));
+
+$('url').addEventListener('input', () => {
+  $('b1').disabled = $('url').value.trim() === '' && $('ref').files.length === 0;
+});
+
+$('b1').onclick = async () => {
+  $('b1').disabled = true;
+  const url = $('url').value.trim();
+  $('s1out').innerHTML = `<div class="spin">${url ? 'Downloading, then tracking' : 'Tracking'} cuts, beats and camera motion</div>`;
+
+  const fd = new FormData();
+  if (url) fd.append('url', url); else fd.append('reference', $('ref').files[0]);
+
+  const r = await fetch('/analyze', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (d.error) { $('s1out').innerHTML = `<div class="err">${d.error}</div>`; $('b1').disabled = false; return; }
+
+  const max = Math.max(...d.energy_curve, 0.001);
+  const bars = d.energy_curve.map(e =>
+    `<i style="height:${Math.max(5, (e / max) * 100)}%"></i>`).join('');
+
+  $('s1out').innerHTML = `
+    ${d.source ? `<div class="note" style="margin-bottom:6px">Reading <b>${d.source}</b></div>` : ''}
+    <div class="stats">
+      <div class="stat"><div class="k">Tempo</div><div class="v">${d.bpm}<small>bpm</small></div></div>
+      <div class="stat"><div class="k">Cuts</div><div class="v">${d.shot_count}</div></div>
+      <div class="stat"><div class="k">Avg shot</div><div class="v">${d.median_shot}<small>s</small></div></div>
+      <div class="stat"><div class="k">Length</div><div class="v">${d.duration}<small>s</small></div></div>
+    </div>
+    <div class="curve">${bars}</div>
+    <div class="curve-cap"><span>Its energy curve — I'll match your footage to this shape</span><span>${d.shot_count} shots</span></div>
+    <div class="note">
+      Ideally <b>${d.clips_ideal} clips</b> — one per distinct source, so nothing repeats.
+      As few as <b>${d.clips_few}</b> works too; I'll reuse them across the ${d.shot_count} shots,
+      just with more repetition. Neither is a hard limit.
+    </div>`;
+  $('t1').textContent = '✓ read';
+  $('s1').classList.add('done');
+
+  const held = [
+    d.warped_shots ? 'ripple/warp' : '',
+    d.rgb_split_shots ? 'RGB split' : '',
+    d.speed_ramps ? 'speed ramps' : '',
+    d.vignette ? 'vignette' : '',
+    d.letterbox ? 'letterbox' : '',
+    d.caption_count ? 'caption slots' : '',
+  ].filter(Boolean);
+
+  $('applied').innerHTML = `
+    <div class="h">Clean mode — cuts, transitions, flashes &amp; slow-mo</div>
+    <div class="fx"><span class="dot">●</span><span>Cut rhythm &amp; beat grid
+      <span class="why">— ${d.shot_count} shots on a ${d.bpm} BPM grid</span></span></div>
+    ${d.false_cuts_dropped ? `<div class="fx"><span class="dot">●</span><span>Camera moves, not cuts
+      <span class="why">— ${d.false_cuts_dropped} apparent cut(s) were just the camera panning; merged back into their shots so the rhythm stays true</span></span></div>` : ''}
+    <div class="fx"><span class="dot">●</span><span>Original framing — no zoom
+      <span class="why">— your clips go in at their native size, centred, untouched. No zoom, no crop,
+      no camera move, no face-framing. (They're vertical, so they fill the frame.)</span></span></div>
+    <div class="fx"><span class="dot">●</span><span>Transitions between clips
+      <span class="why">— ${Object.entries(d.transitions).filter(([k, n]) => n && k !== 'flash')
+          .map(([k, n]) => `${n} ${k}`).join(', ') || 'straight cuts'}</span></span></div>
+    ${d.flash_cuts ? `<div class="fx"><span class="dot">●</span><span>Flash cuts
+      <span class="why">— ${d.flash_cuts} shot(s) flash white at the cut, where the reference does; a real detected luminance spike, not invented</span></span></div>` : ''}
+    <div class="fx"><span class="dot">●</span><span>Slow-motion
+      <span class="why">— the calmer shots (below-median energy) play at half speed. A preset, not a measurement (0.5x and 60fps capture look identical) — and it fills the same slot length, so the rhythm is untouched.</span></span></div>
+    <div class="fx"><span class="dot">●</span><span>Flattering face angle
+      <span class="why">— where your clips show a face, I favour the moments it's front-facing or shot from above and steer the cut away from low-angle "up-the-nose" frames (the double-chin angle). It reads the head angle, not the chin itself; b-roll with no face is left alone.</span></span></div>
+    <div class="fx"><span class="dot">●</span><span>Quality polish
+      <span class="why">— every clip gets a subtle clean-up: light denoise and a moderate sharpen, so the footage looks crisper. Colour is left completely untouched. It's polish, not AI upscaling — it can't add detail that isn't there. Tell me if it's too much or too little.</span></span></div>
+    ${d.cut_styles && (d.cut_styles.action + d.cut_styles.match + d.cut_styles.still) ?
+      `<div class="fx"><span class="dot">●</span><span>Cut points matched to the reference
+      <span class="why">— I read how each of its cuts sits on the motion (${[
+          d.cut_styles.action ? `${d.cut_styles.action} on action` : '',
+          d.cut_styles.match ? `${d.cut_styles.match} motion-matched` : '',
+          d.cut_styles.still ? `${d.cut_styles.still} on stillness` : ''].filter(Boolean).join(', ')})
+      and pick where each of your clips cuts so consecutive clips flow the same way. Invisible —
+      only the in/out point moves, the frames and the rhythm are untouched.</span></span></div>` : ''}
+    ${d.source_groups && d.source_groups.length ? `<div class="fx"><span class="dot">●</span><span>Spliced sources
+      <span class="why">— ${d.source_groups.length} run(s) where the reference chops one video into several cuts (${d.source_groups.map(g => g.length + ' shots').join(', ')}). I splice ONE of your clips across each run — sequential pieces of it — instead of spreading different clips.</span></span></div>` : ''}
+    <div class="fx"><span class="dot">●</span><span>Reference audio as a guide track
+      <span class="why">— muted layer to cut against; not for publishing</span></span></div>
+    ${held.length ? `<div class="fx"><span class="dot" style="opacity:.4">○</span><span>Paused for now
+      <span class="why">— detected in the reference but turned off in clean mode: ${held.join(', ')}. One flag away when you want the full stack back.</span></span></div>` : ''}`;
+  $('s2').classList.remove('off');
+};
+
+$('b2').onclick = async () => {
+  $('b2').disabled = true;
+  $('s2out').innerHTML = '<div class="spin">Scoring your clips, matching them to the shots, preparing footage for AE</div>';
+
+  const fd = new FormData();
+  for (const f of $('clips').files) fd.append('clips', f);
+
+  const r = await fetch('/build', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (d.error) { $('s2out').innerHTML = `<div class="err">${d.error}</div>`; $('b2').disabled = false; return; }
+
+  $('s2out').innerHTML =
+    `<div class="note"><b>${d.shots} shots</b> built from <b>${d.clips_used}</b> of your ${d.clips_given} clips.</div>` +
+    (d.lookalikes ? `<div class="note" style="opacity:.85">${d.lookalikes} shot(s) had a clip of yours that <b>looks like</b> the reference's clip — those went into the same spot, used the same way.</div>` : '') +
+    (d.short_clips && d.short_clips.length ? `<div class="note" style="opacity:.75">
+      ${d.short_clips.length} clip(s) were shorter than their shot — I slowed them to fill instead of
+      leaving black (${d.short_clips.map(s => `${s.clip}: ${s.have}s for a ${s.need}s shot`).join('; ')}).
+      For crisper cuts there, bring longer clips.</div>` : '');
+  $('t2').textContent = '✓ built';
+  $('s2').classList.add('done');
+  $('s3').classList.remove('off');
+  $('s4').classList.remove('off');
+
+  renderBuild(d);
+};
+
+function renderBuild(d) {
+  const rows = d.plan.map(p => `<tr>
+      <td>${p.shot}</td><td>${p.name}</td><td>${p.start}s</td>
+      <td>${p.duration}s</td><td>${p.target.toFixed(2)} → ${p.actual.toFixed(2)}</td>
+    </tr>`).join('');
+  $('s3').classList.remove('off');
+  $('s3out').innerHTML = `
+    <div class="path">${d.jsx_path}</div>
+    <ol class="steps-ae">
+      <li>In After Effects: <b>File &rsaquo; Scripts &rsaquo; Run Script File…</b></li>
+      <li>Pick the file above.</li>
+      <li>It builds a timestamped comp — <code>EditForge 14:32:07</code> — so you always know which run you're looking at.</li>
+      <li>Every cut, flash, zoom and the grade land as <b>real layers and keyframes</b>. Change anything.</li>
+    </ol>
+    <a class="dl" href="${d.jsx}?t=${Date.now()}" download>↓ Download edit.jsx</a>
+    <details>
+      <summary>Shot list — which clip went where</summary>
+      <table>
+        <tr><th>#</th><th>Clip</th><th>From</th><th>Length</th><th>Energy target → got</th></tr>
+        ${rows}
+      </table>
+    </details>`;
+  $('s3').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function rebuildWithCorrections(btn) {
+  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Rebuilding with corrections…';
+  const r = await fetch('/build', { method: 'POST', body: new FormData() });   // no clips = reuse saved
+  const d = await r.json();
+  if (d.error) { btn.textContent = 'Rebuild failed: ' + d.error; btn.disabled = false; return; }
+  renderBuild(d);                                  // fresh edit.jsx in step 03, corrections folded in
+  btn.textContent = '✓ Rebuilt — re-render this in AE, then drop it back';
+}
+
+const pct = s => Math.round(s * 100) + '%';
+const hue = s => Math.round(s * 120);   // 0 = red, 1 = green
+function bar(s) {
+  return `<span style="display:inline-block;width:120px;height:7px;border-radius:4px;
+    background:rgba(255,255,255,.1);vertical-align:middle;overflow:hidden">
+    <span style="display:block;height:100%;width:${pct(s)};
+    background:hsl(${hue(s)},60%,50%)"></span></span>`;
+}
+function dimRow(label, s, detail) {
+  return `<div class="fx" style="align-items:center">
+    <span style="min-width:96px">${label}</span> ${bar(s)}
+    <span style="min-width:42px;text-align:right;font-variant-numeric:tabular-nums">${pct(s)}</span>
+    <span class="why" style="margin-left:10px">${detail}</span></div>`;
+}
+
+$('b4').onclick = async () => {
+  $('b4').disabled = true;
+  $('s4out').innerHTML = '<div class="spin">Analyzing your render and comparing it to the reference</div>';
+
+  const fd = new FormData();
+  fd.append('edit', $('editrender').files[0]);
+  const r = await fetch('/compare', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (d.error) { $('s4out').innerHTML = `<div class="err">${d.error}</div>`; $('b4').disabled = false; return; }
+
+  const rh = d.rhythm, tr = d.transitions, cp = d.cut_points, ef = d.effects;
+  const misses = [...tr.mismatches.map(m => ({ ...m, kind: 'transition' })),
+                  ...cp.mismatches.map(m => ({ ...m, kind: 'cut style' }))]
+    .sort((a, b) => a.at_s - b.at_s);
+
+  $('s4out').innerHTML = `
+    <div class="stats" style="margin-bottom:10px">
+      <div class="stat"><div class="k">Edit-mechanics fidelity</div>
+        <div class="v" style="color:hsl(${hue(d.overall)},60%,55%)">${pct(d.overall)}</div></div>
+    </div>
+    ${dimRow('Cut rhythm', rh.score,
+      `${rh.aligned}/${rh.ref_cuts} cuts aligned` +
+      (rh.mean_drift_ms ? `, ${rh.mean_drift_ms}ms avg drift` : ', frame-accurate') +
+      (rh.missing_in_edit ? `, ${rh.missing_in_edit} missing` : '') +
+      (rh.extra_in_edit ? `, ${rh.extra_in_edit} extra` : ''))}
+    ${dimRow('Transitions', tr.score, `${tr.matched}/${tr.of} cuts same type`)}
+    ${dimRow('Cut points', cp.score, `${cp.matched}/${cp.of} land on the same motion`)}
+    ${dimRow('Ripple / warp', ef.warp.score,
+      `${ef.warp.ref_warp_shots} in ref → ${ef.warp.edit_warp_shots} in your render`)}
+    <div class="fx"><span class="dot">●</span><span>Effect levels
+      <span class="why">— vignette ${ef.vignette.ref} → ${ef.vignette.edit},
+      letterbox ${(ef.letterbox.ref*100).toFixed(1)}% → ${(ef.letterbox.edit*100).toFixed(1)}%,
+      RGB split ${ef.rgb_split.ref} → ${ef.rgb_split.edit} shots</span></span></div>
+    ${misses.length ? `<details style="margin-top:8px"><summary>${misses.length} cut(s) didn't match</summary>
+      <table><tr><th>At</th><th>What</th><th>Reference</th><th>Your render</th></tr>
+      ${misses.map(m => `<tr><td>${m.at_s}s</td><td>${m.kind}</td><td>${m.ref}</td><td>${m.edit}</td></tr>`).join('')}
+      </table></details>` : ''}
+    ${d.corrections && d.corrections.summary && d.corrections.summary.length ? `
+    <div class="applied" style="margin-top:12px">
+      <div class="h">Auto-corrections — one click to apply</div>
+      ${d.corrections.summary.map(s => `<div class="fx"><span class="dot">●</span><span>${s}</span></div>`).join('')}
+      <button style="margin-top:10px" onclick="rebuildWithCorrections(this)">Rebuild with these corrections</button>
+      <div class="note" style="margin-top:6px">Uses the clips you already gave me — no need to re-drop them. It builds a fresh edit.jsx with these fixes folded in; re-render it in AE and drop it back to score again. Each pass gets closer.</div>
+    </div>` : (d.overall >= 0.95 ? `<div class="note" style="margin-top:12px">Nothing worth correcting — this is a close match.</div>` : '')}
+    <div class="applied" style="margin-top:12px">
+      <div class="h">Different on purpose — not counted against the match</div>
+      ${d.not_matched.map(n => `<div class="fx"><span class="dot" style="opacity:.4">○</span><span>${n.dimension}
+        <span class="why">— ${n.why}</span></span></div>`).join('')}
+    </div>`;
+  $('t4').textContent = '✓ scored';
+  $('s4').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('b4').disabled = false;
+};
+</script>
+</body>
+</html>
